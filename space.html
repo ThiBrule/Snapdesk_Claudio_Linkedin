@@ -39,6 +39,15 @@
 
     let SPACE = null;
 
+    // ---------- Persistance locale (par espace) ----------
+    // Les posts générés et la note du jour survivent au changement de page.
+    const POSTS_KEY = `snapdesk_posts_${SPACE_ID}`;
+    const DAILY_KEY = `snapdesk_daily_${SPACE_ID}`;
+    function loadSavedPosts() { try { return JSON.parse(localStorage.getItem(POSTS_KEY) || '{}'); } catch { return {}; } }
+    function savePostText(key, text) { const m = loadSavedPosts(); m[key] = text; localStorage.setItem(POSTS_KEY, JSON.stringify(m)); }
+    function getDailyNote() { return localStorage.getItem(DAILY_KEY) || ''; }
+    function setDailyNote(v) { localStorage.setItem(DAILY_KEY, v); }
+
     // ---------- Toast ----------
     let toastT;
     function toast(msg) {
@@ -74,8 +83,24 @@
           </div>
           <div class="facts">${facts.join('')}${dispo}</div>
           ${fmt(s.description) ? `<p class="desc">${esc(s.description)}</p>` : ''}
+          <div class="daily">
+            <label for="daily-note">📌 Information complémentaire du jour <span>— oriente les posts générés ci-dessous (actualité, promo, événement, angle du jour…)</span></label>
+            <textarea id="daily-note" placeholder="Ex. : canicule aujourd'hui → insister sur la clim et les terrasses · ou « portes ouvertes jeudi », « -1 mois offert cette semaine », « nouvelle photo dispo »…"></textarea>
+            <div class="saved" id="daily-saved"></div>
+          </div>
         </div>`;
       document.getElementById('reload-space').addEventListener('click', reloadSpace);
+      // Note du jour : pré-remplie depuis le stockage, sauvegardée à la frappe.
+      const dn = document.getElementById('daily-note');
+      if (dn) {
+        dn.value = getDailyNote();
+        let savedT;
+        dn.addEventListener('input', () => {
+          setDailyNote(dn.value);
+          const tag = document.getElementById('daily-saved');
+          if (tag) { tag.textContent = '✓ enregistré'; clearTimeout(savedT); savedT = setTimeout(() => { tag.textContent = ''; }, 1200); }
+        });
+      }
     }
 
     async function fetchSpace() {
@@ -123,6 +148,10 @@
         const b = card && card.querySelector('.gen-one');
         if (b) b.addEventListener('click', () => generateOne(c.key));
       });
+      // Restaure les posts déjà générés (persistés localement) : ils restent
+      // affichés tant qu'on ne clique pas Régénérer.
+      const saved = loadSavedPosts();
+      COMS.forEach(c => { if (saved[c.key]) fillCard(c, { post: saved[c.key] }); });
     }
 
     function fillCard(com, entry) {
@@ -182,6 +211,7 @@
         url: s.url, localisation: s.localisation, espace: s.espace, prix: s.prix,
         postes: s.postes, superficie: s.superficie, disponibilite: s.disponibilite,
         description: s.description,
+        dailyNote: getDailyNote(),
       };
     }
 
@@ -208,8 +238,12 @@
       card.querySelectorAll('.post-actions .btn').forEach(b => { b.disabled = true; });
       try {
         const posts = await callGenerate([key]);
-        fillCard(com, posts[key]);
-        if (posts[key] && posts[key].post && !posts[key].skipped && !posts[key].error) toast('Post généré');
+        const entry = posts[key];
+        fillCard(com, entry);
+        if (entry && entry.post && !entry.skipped && !entry.error) {
+          savePostText(key, entry.post); // persiste : reste au retour sur la page
+          toast('Post généré');
+        }
       } catch (err) {
         fillCard(com, { error: err.message });
       }
