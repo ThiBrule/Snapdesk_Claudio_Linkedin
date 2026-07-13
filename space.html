@@ -70,7 +70,7 @@
               <p class="eyebrow">Espace</p>
               <h1>${esc(s.espace)}</h1>
             </div>
-            <button id="reload-space" class="btn primary" title="Relit les infos de l'espace et régénère les posts">↻ Recharger l'espace</button>
+            <button id="reload-space" class="btn primary" title="Relit les infos de l'espace (les posts se génèrent à la demande)">↻ Recharger l'espace</button>
           </div>
           <div class="facts">${facts.join('')}${dispo}</div>
           ${fmt(s.description) ? `<p class="desc">${esc(s.description)}</p>` : ''}
@@ -105,14 +105,24 @@
       return `<div class="skeleton" style="width:90%"></div><div class="skeleton" style="width:80%"></div><div class="skeleton" style="width:95%"></div><div class="skeleton" style="width:60%"></div>`;
     }
 
-    function renderPostsShell() {
+    // État "au repos" : rien n'est généré tant qu'on ne clique pas (1 requête par clic).
+    function renderPostsIdle() {
       const zone = document.getElementById('posts-zone');
-      zone.innerHTML = `<div class="posts">${
-        COMS.map(c => cardShell(
-          c, skeletonBody(), '',
-          `<button class="btn small" disabled>Copier</button><button class="btn small" disabled>🔄 Régénérer</button>`
-        )).join('')
-      }</div>`;
+      zone.innerHTML =
+        `<div class="notice">Clique sur « ✨ Générer le post » du commercial voulu. Les posts se créent <b>un par un, à la demande</b> (pour ménager le quota de l'API).</div>` +
+        `<div class="posts">${
+          COMS.map(c => cardShell(
+            c,
+            `<span style="color:var(--taupe); font-style:italic;">Pas encore généré.</span>`,
+            '',
+            `<button class="btn small brass gen-one" style="flex:1">✨ Générer le post</button>`
+          )).join('')
+        }</div>`;
+      COMS.forEach(c => {
+        const card = document.getElementById(`post-${c.key}`);
+        const b = card && card.querySelector('.gen-one');
+        if (b) b.addEventListener('click', () => generateOne(c.key));
+      });
     }
 
     function fillCard(com, entry) {
@@ -150,7 +160,7 @@
       if (canCopy) {
         actions.querySelector('.copy').addEventListener('click', () => copyText(entry.post));
       }
-      actions.querySelector('.regen').addEventListener('click', () => regenerate(com.key));
+      actions.querySelector('.regen').addEventListener('click', () => generateOne(com.key));
     }
 
     async function copyText(text) {
@@ -186,28 +196,20 @@
       return data.posts || {};
     }
 
-    async function generateAll() {
-      renderPostsShell();
-      let posts;
-      try {
-        posts = await callGenerate(COMS.map(c => c.key));
-      } catch (err) {
-        document.getElementById('posts-zone').innerHTML = `<div class="error-box">Génération impossible : ${esc(err.message)}</div>`;
-        return;
-      }
-      COMS.forEach(c => fillCard(c, posts[c.key]));
-    }
-
-    async function regenerate(key) {
+    // Génère (ou régénère) le post d'UN seul commercial → 1 requête API.
+    async function generateOne(key) {
       const com = COMS.find(c => c.key === key);
       const card = document.getElementById(`post-${key}`);
-      if (card) card.querySelector('.post-body').innerHTML = skeletonBody();
-      const old = card && card.querySelector('.post-status');
+      if (!card) return;
+      // Passe la carte en chargement + désactive ses boutons le temps de la requête.
+      card.querySelector('.post-body').innerHTML = skeletonBody();
+      const old = card.querySelector('.post-status');
       if (old) old.remove();
+      card.querySelectorAll('.post-actions .btn').forEach(b => { b.disabled = true; });
       try {
         const posts = await callGenerate([key]);
         fillCard(com, posts[key]);
-        if (posts[key] && posts[key].post && !posts[key].skipped && !posts[key].error) toast('Nouveau post généré');
+        if (posts[key] && posts[key].post && !posts[key].skipped && !posts[key].error) toast('Post généré');
       } catch (err) {
         fillCard(com, { error: err.message });
       }
@@ -220,8 +222,8 @@
       try {
         SPACE = await fetchSpace();
         renderHead();
+        renderPostsIdle();
         toast('Infos espace relues');
-        await generateAll();
       } catch (err) {
         document.getElementById('posts-zone').innerHTML = `<div class="error-box">${esc(err.message)}</div>`;
       }
@@ -236,7 +238,7 @@
       try {
         SPACE = await fetchSpace();
         renderHead();
-        await generateAll();
+        renderPostsIdle();
       } catch (err) {
         document.getElementById('head').innerHTML = `<div class="error-box">${esc(err.message)} — <a href="/">retour</a></div>`;
       }
