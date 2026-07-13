@@ -37,7 +37,7 @@ un Google Sheet.
    | `APP_USER` | le pseudo du **seul** compte autorisé à utiliser l'app |
    | `APP_PASSWORD` | le mot de passe de ce compte (choisis-le fort) |
    | `SESSION_SECRET` *(optionnel)* | longue chaîne aléatoire pour signer les sessions (`openssl rand -hex 32`). Si absent, dérivé de `APP_PASSWORD`. |
-   | `MODEL` *(optionnel)* | `gemini-2.5-flash-lite` par défaut (dispo en offre gratuite) |
+   | `MODEL` *(optionnel)* | `gemini-flash-lite-latest` par défaut (alias toujours à jour, offre gratuite) |
    | `LLM_PROVIDER` *(optionnel)* | `gemini` par défaut. Mets `anthropic` (+ `ANTHROPIC_API_KEY`) pour repasser sur Claude. |
    | `SHEET_CSV_URL` *(optionnel)* | URL CSV publiée de ton Google Sheet, pour la mini app web (voir §1bis). Sans elle, la mini app affiche un jeu de données d'exemple. |
 
@@ -171,10 +171,12 @@ Puis **redéploie sur Vercel** (un `git push` suffit si le projet est lié à Gi
 
 ## 5. Réglages utiles
 
-- **Changer de modèle** : variable d'env `MODEL`. Défaut `gemini-2.5-flash-lite`
-  (offre gratuite). Selon les quotas de ta clé, tu peux essayer `gemini-flash-latest`
-  ou, avec un compte facturé, `gemini-2.0-flash` / `gemini-3-flash`. Pour changer de
-  fournisseur, `LLM_PROVIDER=anthropic` + `ANTHROPIC_API_KEY` (`claude-sonnet-5`…).
+- **Changer de modèle** : variable d'env `MODEL`. Défaut `gemini-flash-lite-latest`
+  (alias « latest » : jamais retiré, contrairement aux versions figées comme
+  `gemini-2.5-flash-lite` que Google finit par bloquer). Autres options :
+  `gemini-flash-latest` (plus costaud), ou avec un compte facturé `gemini-2.0-flash`.
+  Pour changer de fournisseur : `LLM_PROVIDER=anthropic` + `ANTHROPIC_API_KEY`
+  (`claude-sonnet-5`…).
 - **Où s'écrivent les posts** : par défaut, 4 colonnes sur la même ligne. Pour basculer vers
   un onglet-journal (une ligne par post, avec historique), c'est une petite adaptation du
   `Code.gs` — dis-moi si tu préfères ce mode.
