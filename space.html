@@ -45,6 +45,7 @@
     const DAILY_KEY = `snapdesk_daily_${SPACE_ID}`;
     function loadSavedPosts() { try { return JSON.parse(localStorage.getItem(POSTS_KEY) || '{}'); } catch { return {}; } }
     function savePostText(key, text) { const m = loadSavedPosts(); m[key] = text; localStorage.setItem(POSTS_KEY, JSON.stringify(m)); }
+    function removeSavedPost(key) { const m = loadSavedPosts(); delete m[key]; localStorage.setItem(POSTS_KEY, JSON.stringify(m)); }
     function getDailyNote() { return localStorage.getItem(DAILY_KEY) || ''; }
     function setDailyNote(v) { localStorage.setItem(DAILY_KEY, v); }
 
@@ -85,7 +86,7 @@
           ${fmt(s.description) ? `<p class="desc">${esc(s.description)}</p>` : ''}
           ${(fmt(s.drive) || fmt(s.presentation)) ? `<div class="resources">
             ${fmt(s.drive) ? `<a class="btn small resource-btn" href="${esc(s.drive)}" target="_blank" rel="noopener noreferrer">📸 Photos &amp; Vidéos</a>` : ''}
-            ${fmt(s.presentation) ? `<button class="btn small" id="copy-presentation">📄 Copier le lien de présentation</button>` : ''}
+            ${fmt(s.presentation) ? `<button class="btn small" id="copy-presentation">🔗 Copier le lien de la landing page</button>` : ''}
           </div>` : ''}
           <div class="daily">
             <label for="daily-note">📌 Information complémentaire du jour <span>— oriente les posts générés ci-dessous (actualité, promo, événement, angle du jour…)</span></label>
@@ -96,7 +97,7 @@
       document.getElementById('reload-space').addEventListener('click', reloadSpace);
       // Lien de présentation : bouton "copier".
       const cp = document.getElementById('copy-presentation');
-      if (cp) cp.addEventListener('click', () => copyText(SPACE.presentation, '✓ Lien de présentation copié'));
+      if (cp) cp.addEventListener('click', () => copyText(SPACE.presentation, '✓ Lien de la landing page copié'));
       // Note du jour : pré-remplie depuis le stockage, sauvegardée à la frappe.
       const dn = document.getElementById('daily-note');
       if (dn) {
@@ -192,11 +193,35 @@
 
       actions.innerHTML =
         `<button class="btn small copy" ${canCopy ? '' : 'disabled'}>Copier</button>` +
-        `<button class="btn small regen">🔄 Régénérer</button>`;
+        `<button class="btn small regen">🔄 Régénérer</button>` +
+        (canCopy ? `<button class="btn small danger del">🗑 Supprimer</button>` : '');
       if (canCopy) {
         actions.querySelector('.copy').addEventListener('click', () => copyText(entry.post));
+        actions.querySelector('.del').addEventListener('click', () => deleteOne(com.key));
       }
       actions.querySelector('.regen').addEventListener('click', () => generateOne(com.key));
+    }
+
+    // Remet une carte au repos (bouton "Générer le post").
+    function setCardIdle(com) {
+      const card = document.getElementById(`post-${com.key}`);
+      if (!card) return;
+      const body = card.querySelector('.post-body');
+      body.classList.add('muted');
+      body.innerHTML = `<span style="color:var(--taupe); font-style:italic;">Pas encore généré.</span>`;
+      const old = card.querySelector('.post-status');
+      if (old) old.remove();
+      const actions = card.querySelector('.post-actions');
+      actions.innerHTML = `<button class="btn small brass gen-one" style="flex:1">✨ Générer le post</button>`;
+      actions.querySelector('.gen-one').addEventListener('click', () => generateOne(com.key));
+    }
+
+    // Supprime le post d'un commercial (affichage + persistance) → carte au repos.
+    function deleteOne(key) {
+      removeSavedPost(key);
+      const com = COMS.find(c => c.key === key);
+      setCardIdle(com);
+      toast('Post supprimé');
     }
 
     async function copyText(text, msg = '✓ Post copié') {

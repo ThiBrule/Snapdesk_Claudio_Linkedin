@@ -79,6 +79,8 @@ h1 { font-family: var(--serif); font-weight: 600; letter-spacing: -.01em; font-s
 .btn.brass:hover { opacity: .92; background: var(--brass); }
 .btn[disabled] { opacity: .5; cursor: default; }
 .btn.small { font-size: 12.5px; padding: 6px 11px; }
+.btn.danger { color: var(--red); }
+.btn.danger:hover { background: var(--red-soft); }
 
 /* --- Recherche --- */
 .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 26px 0 20px; }
