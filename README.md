@@ -18,7 +18,9 @@ un Google Sheet.
 - **Le déclencheur** est une case à cocher « Générer » sur chaque ligne d'espace.
 - **Chaque commercial** a son propre fichier de config (`lib/commercials/*.js`)
   avec son *tone of voice* et son *template*. On les remplit un par un.
-- La **clé API Anthropic** reste côté Vercel (jamais dans le Sheet).
+- La génération utilise **Google Gemini** par défaut (`lib/gemini.js`), sélectionné
+  via `lib/llm.js` — on peut repasser sur Claude avec `LLM_PROVIDER=anthropic`.
+- La **clé API** (Gemini ou Anthropic) reste côté Vercel (jamais dans le Sheet).
 
 ---
 
@@ -31,9 +33,10 @@ un Google Sheet.
 
    | Nom | Valeur |
    |---|---|
-   | `ANTHROPIC_API_KEY` | ta clé `sk-ant-...` (console.anthropic.com) |
+   | `GEMINI_API_KEY` | ta clé Google Gemini `AIza...` (https://aistudio.google.com/apikey) |
    | `API_SECRET` | une longue chaîne aléatoire que tu inventes |
-   | `MODEL` *(optionnel)* | `claude-sonnet-5` par défaut |
+   | `MODEL` *(optionnel)* | `gemini-2.0-flash` par défaut |
+   | `LLM_PROVIDER` *(optionnel)* | `gemini` par défaut. Mets `anthropic` (+ `ANTHROPIC_API_KEY`) pour repasser sur Claude. |
    | `SHEET_CSV_URL` *(optionnel)* | URL CSV publiée de ton Google Sheet, pour la mini app web (voir §1bis). Sans elle, la mini app affiche un jeu de données d'exemple. |
 
 5. Déploie. Note l'URL du projet, ex. `https://snapdesk-linkedin.vercel.app`.
@@ -136,8 +139,9 @@ Puis **redéploie sur Vercel** (un `git push` suffit si le projet est lié à Gi
 
 ## 5. Réglages utiles
 
-- **Changer de modèle** : variable d'env `MODEL` (ex. `claude-opus-4-8` pour + de qualité,
-  `claude-sonnet-5` pour le meilleur rapport qualité/coût — défaut).
+- **Changer de modèle** : variable d'env `MODEL` (Gemini : `gemini-2.0-flash` défaut,
+  `gemini-2.5-flash` / `gemini-3-flash` pour + de qualité). Pour changer de fournisseur,
+  `LLM_PROVIDER=anthropic` + `ANTHROPIC_API_KEY` (modèles `claude-sonnet-5`, `claude-opus-4-8`).
 - **Où s'écrivent les posts** : par défaut, 4 colonnes sur la même ligne. Pour basculer vers
   un onglet-journal (une ligne par post, avec historique), c'est une petite adaptation du
   `Code.gs` — dis-moi si tu préfères ce mode.
@@ -154,7 +158,7 @@ Puis **redéploie sur Vercel** (un `git push` suffit si le projet est lié à Gi
 | `BACKEND_URL non configurée` | Tu as laissé `TON-PROJET` dans `Code.gs`. |
 | `Onglet "Espaces" introuvable` | `CONFIG.SHEET_NAME` ≠ nom réel de l'onglet. |
 | Rien ne se passe en cochant | L'étape ⚙️ *Installer / Configurer* n'a pas été faite (trigger absent). |
-| `API Anthropic 401` | `ANTHROPIC_API_KEY` absente/incorrecte côté Vercel. |
+| `GEMINI_API_KEY manquante` / `API Gemini 400/403` | Clé Gemini absente/incorrecte côté Vercel (ou quota dépassé). |
 | Timeout | Le plan Vercel limite la durée : `vercel.json` monte déjà `maxDuration` à 60 s. |
 
 ---
@@ -171,7 +175,9 @@ snapdesk-linkedin/
 │   ├── generate.js          # endpoint POST (auth + orchestration Claude)
 │   └── spaces.js            # endpoint GET (liste des espaces)
 ├── lib/
-│   ├── anthropic.js         # appel API Anthropic (fetch natif + retry)
+│   ├── llm.js               # sélecteur de fournisseur (Gemini par défaut / Claude)
+│   ├── gemini.js            # appel API Google Gemini (fetch natif + retry)
+│   ├── anthropic.js         # appel API Anthropic Claude (fallback via LLM_PROVIDER)
 │   ├── prompt.js            # construction du prompt (système + user)
 │   ├── spaces.js            # lecture de la base (Google Sheet CSV ou exemple)
 │   ├── spacesSample.js      # jeu de données d'exemple (fallback)

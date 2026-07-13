@@ -15,7 +15,7 @@
 // ---------------------------------------------------------------------------
 
 import { COMMERCIALS, COMMERCIAL_KEYS, getCommercial } from '../lib/commercials/index.js';
-import { generatePost, MODEL } from '../lib/anthropic.js';
+import { generatePost, MODEL } from '../lib/llm.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
