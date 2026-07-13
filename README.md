@@ -72,15 +72,21 @@ Un bouton **Déconnexion** est disponible en haut de l'app. Un seul compte exist
 
 ### D'où viennent les espaces ? (la « BDD Excel »)
 
-L'endpoint `GET /api/spaces` lit les espaces depuis :
+L'endpoint `GET /api/spaces` lit le Google Sheet Snapdesk **EN DIRECT** à chaque
+appel (endpoint `gviz` CSV, ID du Sheet codé dans `lib/spaces.js`). Toute modif
+du Sheet apparaît sur le site au rechargement de la page.
 
-1. **ton Google Sheet publié en CSV** si la variable `SHEET_CSV_URL` est définie ;
-2. sinon, un **jeu de données d'exemple** (`lib/spacesSample.js`) — pratique pour
-   tester l'interface immédiatement.
+**Seul pré-requis (à faire une fois, côté Google) :** le Sheet doit être lisible
+sans authentification. Dans le Sheet → **Partager** → *Accès général* → **Tous les
+utilisateurs disposant du lien** → rôle **Lecteur**. (Un site ne peut pas lire un
+Sheet privé — c'est une sécurité Google, impossible à contourner côté code.)
 
-**Publier ton Sheet en CSV :** dans le Google Sheet → *Fichier → Partager →
-Publier sur le web* → choisis l'onglet des espaces + format **CSV** → copie l'URL
-obtenue et mets-la dans `SHEET_CSV_URL` sur Vercel.
+Repli : si le Sheet est injoignable (privé, hors-ligne, timeout), l'app affiche
+le catalogue de secours `lib/spacesSample.js` — le site reste fonctionnel.
+
+**Pointer un autre Sheet / onglet, ou une publication CSV :** définis la variable
+d'env `SHEET_CSV_URL` (elle a priorité). Pour publier en CSV : *Fichier → Partager
+→ Publier sur le web* → onglet + format **CSV** → copie l'URL dans `SHEET_CSV_URL`.
 
 Colonnes reconnues (insensible aux accents/casse) : `espace` (ou `nom`),
 `localisation`, `prix`, `postes`, `superficie(s)`, `disponibilite`, `url` /
