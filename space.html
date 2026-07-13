@@ -46,6 +46,30 @@
     function loadSavedPosts() { try { return JSON.parse(localStorage.getItem(POSTS_KEY) || '{}'); } catch { return {}; } }
     function savePostText(key, text) { const m = loadSavedPosts(); m[key] = text; localStorage.setItem(POSTS_KEY, JSON.stringify(m)); }
     function removeSavedPost(key) { const m = loadSavedPosts(); delete m[key]; localStorage.setItem(POSTS_KEY, JSON.stringify(m)); }
+
+    // ---------- Historique GLOBAL des accroches (anti-répétition, tous espaces / tous commerciaux) ----------
+    const HISTORY_KEY = 'snapdesk_hook_history';
+    const HISTORY_MAX = 60;
+    function loadHistory() { try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch { return []; } }
+    function firstLine(text) {
+      const line = String(text || '').split('\n').map(s => s.trim()).find(s => s.length > 0) || '';
+      return line.slice(0, 160);
+    }
+    function recordHook(author, postText) {
+      const hook = firstLine(postText);
+      if (!hook) return;
+      const hist = loadHistory();
+      hist.push({ author, hook });
+      // dédoublonne (author|hook) en gardant les plus récents, puis plafonne.
+      const seen = new Set(); const out = [];
+      for (let i = hist.length - 1; i >= 0; i--) {
+        const k = hist[i].author + '|' + hist[i].hook;
+        if (seen.has(k)) continue;
+        seen.add(k); out.unshift(hist[i]);
+      }
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(out.slice(-HISTORY_MAX)));
+    }
+    function recentHooksForPrompt() { return loadHistory().slice(-30); }
     function getDailyNote() { return localStorage.getItem(DAILY_KEY) || ''; }
     function setDailyNote(v) { localStorage.setItem(DAILY_KEY, v); }
 
@@ -251,7 +275,7 @@
       const res = await Auth.fetch('/api/generate', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ space: spacePayload(), commercials }),
+        body: JSON.stringify({ space: spacePayload(), commercials, history: recentHooksForPrompt() }),
       });
       const data = await res.json();
       if (!data.ok) throw new Error(data.error || `HTTP ${res.status}`);
@@ -274,6 +298,7 @@
         fillCard(com, entry);
         if (entry && entry.post && !entry.skipped && !entry.error) {
           savePostText(key, entry.post); // persiste : reste au retour sur la page
+          recordHook(com.name, entry.post); // mémorise l'accroche pour éviter les répétitions
           toast('Post généré');
         }
       } catch (err) {

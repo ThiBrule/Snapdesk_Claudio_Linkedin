@@ -61,6 +61,10 @@ export default async function handler(req, res) {
     /* on continue avec les seules infos du Sheet */
   }
 
+  // Historique des accroches déjà utilisées (envoyé par le client) → anti-répétition.
+  const recentHooks = Array.isArray(payload.history) ? payload.history.slice(-40) : [];
+  enrichedSpace = { ...enrichedSpace, recentHooks };
+
   // --- Génération en parallèle (une erreur sur un commercial n'impacte pas les autres) ---
   const entries = await Promise.all(
     requested.map(async (key) => {
