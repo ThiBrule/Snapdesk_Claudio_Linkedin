@@ -17,6 +17,22 @@
     <div id="posts-zone"></div>
   </div>
 
+  <!-- Modale d'édition d'un post -->
+  <div id="edit-modal" class="modal-overlay" aria-hidden="true">
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="edit-modal-title">
+      <div class="modal-head">
+        <h3 id="edit-modal-title">Modifier le post</h3>
+        <button class="modal-close" id="edit-cancel" aria-label="Fermer">✕</button>
+      </div>
+      <textarea id="edit-modal-area" class="edit-area" spellcheck="true"></textarea>
+      <div class="modal-foot">
+        <span class="modal-hint">Astuce : Ctrl/⌘ + Entrée pour valider</span>
+        <button class="btn" id="edit-cancel-2">Annuler</button>
+        <button class="btn validate" id="edit-save">✓ Valider</button>
+      </div>
+    </div>
+  </div>
+
   <div id="toast" class="toast"></div>
 
   <script src="/assets/auth.js"></script>
@@ -256,46 +272,63 @@
       actions.querySelector('.regen').addEventListener('click', () => generateOne(com.key));
     }
 
-    function autoResize(ta) { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight + 4, 700) + 'px'; }
+    // ---------- Édition dans une fenêtre centrée (modale, animée) ----------
+    let editingKey = null;
 
-    // Passe une carte en édition manuelle : le corps devient éditable, le bouton
-    // "Modifier" laisse place à "Valider" le temps de l'édition.
+    function openEditModal() {
+      const el = document.getElementById('edit-modal');
+      el.style.display = 'flex';
+      void el.offsetWidth;            // reflow → déclenche la transition d'entrée
+      el.classList.add('show');
+      el.setAttribute('aria-hidden', 'false');
+    }
+    function closeEditModal() {
+      const el = document.getElementById('edit-modal');
+      el.classList.remove('show');
+      el.setAttribute('aria-hidden', 'true');
+      setTimeout(() => { if (!el.classList.contains('show')) el.style.display = 'none'; }, 220);
+      editingKey = null;
+    }
+
+    // "Modifier" : ouvre la modale centrée avec le texte du post.
     function enterEdit(key) {
-      const card = document.getElementById(`post-${key}`);
-      if (!card) return;
-      const body = card.querySelector('.post-body');
-      const current = (loadSavedPosts()[key] != null) ? loadSavedPosts()[key] : body.textContent;
-      body.classList.remove('muted');
-      body.innerHTML = `<textarea class="edit-area" id="edit-${key}"></textarea>`;
-      const ta = document.getElementById(`edit-${key}`);
+      const com = COMS.find(c => c.key === key);
+      if (!com) return;
+      editingKey = key;
+      const saved = loadSavedPosts()[key];
+      const bodyEl = document.querySelector(`#post-${key} .post-body`);
+      const current = (saved != null) ? saved : (bodyEl ? bodyEl.textContent : '');
+      document.getElementById('edit-modal-title').textContent = `Modifier le post — ${com.name}`;
+      const ta = document.getElementById('edit-modal-area');
       ta.value = current;
-      autoResize(ta);
-      ta.addEventListener('input', () => autoResize(ta));
-      ta.focus();
-      // Statut "édition" + une seule action : Valider.
-      const old = card.querySelector('.post-status');
-      if (old) old.remove();
-      const actions = card.querySelector('.post-actions');
-      actions.insertAdjacentHTML('beforebegin', `<div class="post-status skip">édition</div>`);
-      actions.innerHTML = `<button class="btn small validate">✓ Valider</button>`;
-      actions.querySelector('.validate').addEventListener('click', () => saveEdit(key));
+      openEditModal();
+      setTimeout(() => { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }, 80);
     }
 
-    // Valide l'édition : sauvegarde le texte (persisté) et rétablit l'affichage normal.
-    function saveEdit(key) {
-      const com = COMS.find(c => c.key === key);
-      const ta = document.getElementById(`edit-${key}`);
-      const text = ta ? String(ta.value).trim() : '';
+    // "Valider" : sauvegarde (persisté) + met à jour la carte + ferme la modale.
+    function saveEdit() {
+      if (!editingKey) { closeEditModal(); return; }
+      const com = COMS.find(c => c.key === editingKey);
+      const text = String(document.getElementById('edit-modal-area').value).trim();
       if (text) {
-        savePostText(key, text);          // persiste la modification
-        fillCard(com, { post: text });    // rétablit le rendu + le bouton "Modifier"
+        savePostText(editingKey, text);
+        fillCard(com, { post: text });
         toast('Post modifié');
-      } else {
-        // texte vidé : on ne sauvegarde pas du vide, on rétablit l'existant.
-        const prev = loadSavedPosts()[key];
-        fillCard(com, prev ? { post: prev } : { error: 'Post vide' });
       }
+      closeEditModal();
     }
+
+    // Câblage de la modale (une seule fois).
+    document.getElementById('edit-save').addEventListener('click', saveEdit);
+    document.getElementById('edit-cancel').addEventListener('click', closeEditModal);
+    document.getElementById('edit-cancel-2').addEventListener('click', closeEditModal);
+    document.getElementById('edit-modal').addEventListener('click', (e) => { if (e.target.id === 'edit-modal') closeEditModal(); });
+    document.addEventListener('keydown', (e) => {
+      const open = document.getElementById('edit-modal').classList.contains('show');
+      if (!open) return;
+      if (e.key === 'Escape') closeEditModal();
+      else if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); saveEdit(); }
+    });
 
     // Remet une carte au repos (bouton "Générer le post").
     function setCardIdle(com) {

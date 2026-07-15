@@ -153,6 +153,20 @@ h1 { font-family: var(--serif); font-weight: 600; letter-spacing: -.01em; font-s
 .btn.validate { color: #fff; background: var(--green); border-color: var(--green); }
 .btn.validate:hover { opacity: .92; background: var(--green); }
 
+/* --- Modale d'édition (centrée + animée) --- */
+.modal-overlay { position: fixed; inset: 0; z-index: 60; display: none; align-items: center; justify-content: center; padding: 20px; background: rgba(15,17,20,.55); opacity: 0; transition: opacity .18s ease; }
+.modal-overlay.show { opacity: 1; }
+.modal-box { width: 100%; max-width: 680px; max-height: 88vh; display: flex; flex-direction: column; background: var(--card); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 24px 70px rgba(0,0,0,.4); padding: 20px 22px; transform: translateY(14px) scale(.96); opacity: 0; transition: transform .22s cubic-bezier(.2,.75,.3,1), opacity .2s ease; }
+.modal-overlay.show .modal-box { transform: none; opacity: 1; }
+.modal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.modal-head h3 { font-family: var(--serif); font-size: 20px; font-weight: 600; margin: 0; }
+.modal-close { border: none; background: transparent; color: var(--taupe); font-size: 17px; cursor: pointer; padding: 4px 9px; border-radius: 8px; line-height: 1; }
+.modal-close:hover { background: var(--paper-2); color: var(--ink); }
+.modal-box .edit-area { min-height: 44vh; flex: 1; }
+.modal-foot { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+.modal-hint { font-size: 12px; color: var(--taupe); margin-right: auto; align-self: center; }
+@media (prefers-reduced-motion: reduce) { .modal-overlay, .modal-box { transition: opacity .12s ease; } .modal-box { transform: none; } }
+
 /* --- États / squelette --- */
 .loading { color: var(--taupe); font-size: 14px; }
 .skeleton { position: relative; overflow: hidden; background: var(--paper-2); border-radius: 6px; height: 12px; margin: 6px 16px; }
