@@ -5,6 +5,11 @@
 // GET  /api/state?space=<id>  → { ok, posts:{commercial:content}, dailyNote, history:[{author,hook}] }
 // POST /api/state  body { op, space, commercial?, content?, author?, hook? }
 //   op = savePost | deletePost | saveDaily | appendHook
+//
+// Visibilité des contenus générés :
+//   - un ADMIN voit TOUS les posts générés (comportement inchangé) ;
+//   - un utilisateur NON admin ne voit que les posts qu'il a lui-même générés
+//     (chaque post mémorise son auteur dans le champ `by`).
 // ---------------------------------------------------------------------------
 
 import { requireAuth } from '../lib/auth.js';
@@ -14,7 +19,8 @@ const HISTORY_KEY = 'history';
 const HISTORY_MAX = 60;
 
 export default async function handler(req, res) {
-  if (!requireAuth(req, res)) return;
+  const session = requireAuth(req, res);
+  if (!session) return;
 
   if (!isConfigured()) {
     return res.status(500).json({
@@ -36,9 +42,11 @@ export default async function handler(req, res) {
         const rows = await kvList(`post:${space}:`);
         for (const r of rows) {
           const commercial = String(r.key).split(':').slice(2).join(':');
-          if (commercial && r.value && typeof r.value.content === 'string') {
-            out.posts[commercial] = r.value.content;
-          }
+          if (!commercial || !r.value || typeof r.value.content !== 'string') continue;
+          // Non-admin : ne voir que ses propres contenus. Les posts sans auteur
+          // (générés avant cette fonctionnalité) restent réservés aux admins.
+          if (!session.admin && r.value.by !== session.user) continue;
+          out.posts[commercial] = r.value.content;
         }
         const daily = await kvGet(`daily:${space}`);
         out.dailyNote = daily && typeof daily.text === 'string' ? daily.text : '';
@@ -53,9 +61,17 @@ export default async function handler(req, res) {
 
       if (op === 'savePost') {
         if (!space || !commercial) return res.status(400).json({ ok: false, error: 'space + commercial requis' });
-        await kvSet(`post:${space}:${commercial}`, { content: String(content == null ? '' : content) });
+        // Mémorise l'auteur : un non-admin ne verra ensuite que ses propres posts.
+        await kvSet(`post:${space}:${commercial}`, { content: String(content == null ? '' : content), by: session.user });
       } else if (op === 'deletePost') {
         if (!space || !commercial) return res.status(400).json({ ok: false, error: 'space + commercial requis' });
+        // Un non-admin ne peut supprimer que ses propres contenus.
+        if (!session.admin) {
+          const existing = await kvGet(`post:${space}:${commercial}`);
+          if (existing && existing.by !== session.user) {
+            return res.status(403).json({ ok: false, error: 'Vous ne pouvez supprimer que vos propres contenus.' });
+          }
+        }
         await kvDel(`post:${space}:${commercial}`);
       } else if (op === 'saveDaily') {
         if (!space) return res.status(400).json({ ok: false, error: 'space requis' });
