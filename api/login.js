@@ -33,7 +33,8 @@ export default async function handler(req, res) {
       const rec = await kvGet(`user:${username}`);
       if (rec && rec.hash && verifyPassword(password, rec.hash)) {
         const admin = !!rec.admin;
-        return res.status(200).json({ ok: true, token: issueToken(username, admin), user: username, admin, name: rec.name || '' });
+        const commercial = admin ? '' : (rec.commercial || '');
+        return res.status(200).json({ ok: true, token: issueToken(username, admin, commercial), user: username, admin, name: rec.name || '', commercial });
       }
     } catch {
       /* Supabase indisponible → on tente le compte maître ci-dessous */

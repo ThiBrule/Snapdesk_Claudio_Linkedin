@@ -47,9 +47,15 @@
             <input id="f-password" type="text" autocomplete="off" placeholder="mot de passe"
               style="font-size:14px; padding:9px 11px; border:1px solid var(--line); border-radius:9px; background:var(--paper-2); color:var(--ink);">
           </div>
+          <div class="field" style="display:flex; flex-direction:column; gap:5px; margin-bottom:12px;">
+            <label style="font-size:11.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--taupe); font-weight:600;">Bloc / persona attribué</label>
+            <select id="f-commercial"
+              style="font-size:14px; padding:9px 11px; border:1px solid var(--line); border-radius:9px; background:var(--paper-2); color:var(--ink);"></select>
+            <span class="hint" style="color:var(--taupe); font-size:12px;">Un compte non admin ne voit et ne génère QUE ce bloc dans les espaces. (Sans effet pour un admin, qui voit tout.)</span>
+          </div>
           <label style="display:flex; align-items:center; gap:8px; font-size:13.5px; margin-bottom:16px; cursor:pointer;">
             <input id="f-admin" type="checkbox" style="width:15px; height:15px; accent-color:var(--brass);">
-            Administrateur (peut gérer les utilisateurs)
+            Administrateur (peut gérer les utilisateurs · voit tous les blocs)
           </label>
           <button class="btn brass" id="submit" type="submit" style="width:100%; justify-content:center;">Enregistrer le compte</button>
         </form>
@@ -64,6 +70,22 @@
     if (!Auth.requireAuth()) { throw new Error('redirect'); }
     if (!Auth.isAdmin()) { location.replace('/'); throw new Error('not admin'); }
     Auth.renderUserBar(document.getElementById('userbar'));
+
+    // Blocs/personas disponibles (même liste que les cartes des espaces).
+    const PERSONAS = [
+      { key: '',         name: '— aucun —' },
+      { key: 'ronan',    name: 'Ronan' },
+      { key: 'cyril',    name: 'Cyril' },
+      { key: 'melanie',  name: 'Mélanie' },
+      { key: 'florian',  name: 'Florian' },
+      { key: 'maxence',  name: 'Maxence' },
+      { key: 'thomas',   name: 'Thomas' },
+      { key: 'snapdesk', name: 'Snapdesk' },
+    ];
+    const personaName = (k) => (PERSONAS.find(p => p.key === k) || {}).name || '';
+    // Remplit le menu déroulant des blocs.
+    document.getElementById('f-commercial').innerHTML =
+      PERSONAS.map(p => `<option value="${p.key}">${p.name}</option>`).join('');
 
     const esc = (t) => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
     let toastT;
@@ -82,10 +104,10 @@
         list.innerHTML = data.users.map(u => `
           <div style="display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--line);">
             <div style="flex:1;">
-              <div style="font-weight:600; font-size:14.5px;">${esc(u.username)} ${u.admin ? '<span class="badge sheet" style="margin-left:6px;">admin</span>' : ''}</div>
+              <div style="font-weight:600; font-size:14.5px;">${esc(u.username)} ${u.admin ? '<span class="badge sheet" style="margin-left:6px;">admin</span>' : (u.commercial ? `<span class="badge" style="margin-left:6px;">${esc(personaName(u.commercial))}</span>` : '<span class="badge" style="margin-left:6px; opacity:.7;">aucun bloc</span>')}</div>
               ${u.name ? `<div style="font-size:12.5px; color:var(--taupe);">${esc(u.name)}</div>` : ''}
             </div>
-            <button class="btn small" data-edit="${esc(u.username)}" data-name="${esc(u.name)}" data-admin="${u.admin?1:0}">Modifier</button>
+            <button class="btn small" data-edit="${esc(u.username)}" data-name="${esc(u.name)}" data-admin="${u.admin?1:0}" data-commercial="${esc(u.commercial||'')}">Modifier</button>
             <button class="btn small danger" data-del="${esc(u.username)}">Supprimer</button>
           </div>`).join('');
         list.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => delUser(b.getAttribute('data-del'))));
@@ -93,6 +115,7 @@
           document.getElementById('f-username').value = b.getAttribute('data-edit');
           document.getElementById('f-name').value = b.getAttribute('data-name') || '';
           document.getElementById('f-admin').checked = b.getAttribute('data-admin') === '1';
+          document.getElementById('f-commercial').value = b.getAttribute('data-commercial') || '';
           document.getElementById('f-password').value = '';
           document.getElementById('f-password').placeholder = 'laisser vide = inchangé';
           window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -119,6 +142,7 @@
         name: document.getElementById('f-name').value,
         password: document.getElementById('f-password').value,
         admin: document.getElementById('f-admin').checked,
+        commercial: document.getElementById('f-commercial').value,
       };
       try {
         const res = await Auth.fetch('/api/users', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify(payload) });

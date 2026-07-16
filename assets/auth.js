@@ -6,22 +6,27 @@
   const TOKEN_KEY = 'snapdesk_token';
   const USER_KEY = 'snapdesk_user';
   const ADMIN_KEY = 'snapdesk_admin';
+  const COM_KEY = 'snapdesk_commercial';
 
   const Auth = {
     token: () => localStorage.getItem(TOKEN_KEY),
     user: () => localStorage.getItem(USER_KEY),
     isAdmin: () => localStorage.getItem(ADMIN_KEY) === '1',
+    // Bloc/persona attribué à un non-admin ('' pour un admin ou non attribué).
+    commercial: () => localStorage.getItem(COM_KEY) || '',
 
-    setSession(token, user, admin) {
+    setSession(token, user, admin, commercial) {
       localStorage.setItem(TOKEN_KEY, token);
       if (user) localStorage.setItem(USER_KEY, user);
       localStorage.setItem(ADMIN_KEY, admin ? '1' : '0');
+      localStorage.setItem(COM_KEY, commercial || '');
     },
 
     clear() {
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(USER_KEY);
       localStorage.removeItem(ADMIN_KEY);
+      localStorage.removeItem(COM_KEY);
     },
 
     logout() {

@@ -1,13 +1,17 @@
 // ---------------------------------------------------------------------------
 // /api/users  — gestion des comptes (réservé aux ADMIN). Stockés dans Supabase.
 //
-// GET    /api/users                → { ok, users: [{ username, name, admin }] }
-// POST   /api/users  { username, password?, name?, admin? }  → crée / met à jour
+// GET    /api/users                → { ok, users: [{ username, name, admin, commercial }] }
+// POST   /api/users  { username, password?, name?, admin?, commercial? }  → crée / met à jour
 // DELETE /api/users?username=<u>   → supprime
+//
+// `commercial` = bloc/persona attribué à un compte NON admin : c'est le seul bloc
+// qu'il voit et peut générer dans les espaces. Ignoré pour les admins (voient tout).
 // ---------------------------------------------------------------------------
 
 import { requireAdmin, hashPassword } from '../lib/auth.js';
 import { kvGet, kvList, kvSet, kvDel, isConfigured } from '../lib/store.js';
+import { COMMERCIAL_KEYS } from '../lib/commercials/index.js';
 
 export default async function handler(req, res) {
   const session = requireAdmin(req, res);
@@ -29,6 +33,7 @@ export default async function handler(req, res) {
           username: String(r.key).slice('user:'.length),
           name: (r.value && r.value.name) || '',
           admin: !!(r.value && r.value.admin),
+          commercial: (r.value && r.value.commercial) || '',
         }))
         .sort((a, b) => a.username.localeCompare(b.username));
       return res.status(200).json({ ok: true, users });
@@ -50,10 +55,22 @@ export default async function handler(req, res) {
       if (!existing && !password) {
         return res.status(400).json({ ok: false, error: 'Mot de passe requis pour un nouveau compte' });
       }
+
+      // Bloc/persona attribué. Absent du corps → on conserve l'existant.
+      let commercial;
+      if (body && Object.prototype.hasOwnProperty.call(body, 'commercial')) {
+        commercial = String(body.commercial || '').trim().toLowerCase();
+        if (commercial && !COMMERCIAL_KEYS.includes(commercial)) {
+          return res.status(400).json({ ok: false, error: 'Bloc/persona invalide' });
+        }
+      } else {
+        commercial = (existing && existing.commercial) || '';
+      }
+
       // Nouveau mot de passe si fourni, sinon on conserve le hash existant.
       const hash = password ? hashPassword(password) : existing.hash;
-      await kvSet(`user:${username}`, { hash, name, admin });
-      return res.status(200).json({ ok: true, user: { username, name, admin } });
+      await kvSet(`user:${username}`, { hash, name, admin, commercial });
+      return res.status(200).json({ ok: true, user: { username, name, admin, commercial } });
     }
 
     if (req.method === 'DELETE') {

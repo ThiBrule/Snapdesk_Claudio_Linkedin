@@ -29,7 +29,8 @@ export default async function handler(req, res) {
   }
 
   // --- Authentification par session (login pseudo + mot de passe) ---
-  if (!requireAuth(req, res)) return;
+  const session = requireAuth(req, res);
+  if (!session) return;
 
   // --- Parsing du corps (Vercel parse déjà le JSON, mais on gère la string au cas où) ---
   let payload = req.body;
@@ -42,10 +43,20 @@ export default async function handler(req, res) {
     return res.status(400).json({ ok: false, error: 'Champ "space.espace" requis' });
   }
 
-  const requested =
+  let requested =
     Array.isArray(payload.commercials) && payload.commercials.length
       ? payload.commercials.map((k) => String(k).toLowerCase())
       : COMMERCIAL_KEYS;
+
+  // Un utilisateur NON admin ne peut générer QUE son bloc attribué (sécurité serveur,
+  // même si le client tente d'en demander d'autres). Les admins génèrent tout.
+  if (!session.admin) {
+    const mine = String(session.commercial || '').toLowerCase();
+    if (!mine) {
+      return res.status(403).json({ ok: false, error: "Aucun bloc ne t'est attribué. Contacte un administrateur." });
+    }
+    requested = [mine];
+  }
 
   // --- Lecture de la fiche Hubspot (une seule fois, réutilisée pour tous les commerciaux) ---
   // On enrichit l'espace avec le contenu du lien Hubspot : c'est la source à privilégier

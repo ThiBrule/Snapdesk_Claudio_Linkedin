@@ -52,6 +52,9 @@
       { key: 'snapdesk', name: 'Snapdesk', role: 'Compte officiel · l\'entreprise',       color: '#0E9E6E' },
     ];
 
+    // Blocs visibles : un admin voit TOUT ; un non-admin ne voit QUE son bloc attribué.
+    const VISIBLE_COMS = Auth.isAdmin() ? COMS : COMS.filter(c => c.key === Auth.commercial());
+
     const fmt = (s) => (s == null ? '' : String(s)).trim();
     const esc = (t) => fmt(t).replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
     const params = new URLSearchParams(location.search);
@@ -269,17 +272,25 @@
     // État "au repos" : rien n'est généré tant qu'on ne clique pas (1 requête par clic).
     function renderPostsIdle() {
       const zone = document.getElementById('posts-zone');
+      // Non-admin sans bloc attribué : rien à générer.
+      if (!Auth.isAdmin() && VISIBLE_COMS.length === 0) {
+        zone.innerHTML = `<div class="notice">Aucun bloc ne t'est attribué pour l'instant. Demande à un administrateur de t'associer à un persona.</div>`;
+        return;
+      }
+      const intro = Auth.isAdmin()
+        ? `Clique sur « ✨ Générer le post » du commercial voulu. Les posts se créent <b>un par un, à la demande</b> (pour ménager le quota de l'API).`
+        : `Ton bloc de création. Clique sur « ✨ Générer le post » pour créer ta publication.`;
       zone.innerHTML =
-        `<div class="notice">Clique sur « ✨ Générer le post » du commercial voulu. Les posts se créent <b>un par un, à la demande</b> (pour ménager le quota de l'API).</div>` +
+        `<div class="notice">${intro}</div>` +
         `<div class="posts">${
-          COMS.map(c => cardShell(
+          VISIBLE_COMS.map(c => cardShell(
             c,
             `<span style="color:var(--taupe); font-style:italic;">Pas encore généré.</span>`,
             '',
             `<button class="btn small brass gen-one" style="flex:1">✨ Générer le post</button>`
           )).join('')
         }</div>`;
-      COMS.forEach(c => {
+      VISIBLE_COMS.forEach(c => {
         const card = document.getElementById(`post-${c.key}`);
         const b = card && card.querySelector('.gen-one');
         if (b) b.addEventListener('click', () => generateOne(c.key));
@@ -287,7 +298,7 @@
       // Restaure les posts déjà générés (persistés localement) : ils restent
       // affichés tant qu'on ne clique pas Régénérer.
       const saved = loadSavedPosts();
-      COMS.forEach(c => { if (saved[c.key]) fillCard(c, { post: saved[c.key] }); });
+      VISIBLE_COMS.forEach(c => { if (saved[c.key]) fillCard(c, { post: saved[c.key] }); });
     }
 
     function fillCard(com, entry) {
