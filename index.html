@@ -75,6 +75,18 @@
 
     let ALL = [];
 
+    // Un espace est "disponible" si sa dispo mentionne « dispo » (sinon : à venir,
+    // sur accord, daté, ou non renseigné → section « À venir & autres »).
+    function isDispo(space) { return dispoClass(space.disponibilite) === 'ok'; }
+
+    function groupHtml(title, items) {
+      return `
+        <section class="space-group">
+          <p class="eyebrow" style="margin-bottom:14px;">${esc(title)} · ${items.length}</p>
+          <div class="spaces">${items.map(card).join('')}</div>
+        </section>`;
+    }
+
     function render(list) {
       const content = document.getElementById('content');
       if (!list.length) {
@@ -82,8 +94,15 @@
         content.innerHTML = `<div class="notice">Aucun espace trouvé.</div>`;
         return;
       }
-      content.className = 'spaces';
-      content.innerHTML = list.map(card).join('');
+      const dispo = list.filter(isDispo);
+      const autres = list.filter(s => !isDispo(s));
+      const parts = [];
+      if (dispo.length) parts.push(groupHtml('Disponibles maintenant', dispo));
+      if (autres.length) parts.push(groupHtml('À venir & autres', autres));
+      content.className = '';
+      content.innerHTML = parts
+        .map((h, i) => i === 0 ? h : `<div style="margin-top:34px;">${h}</div>`)
+        .join('');
     }
 
     async function load() {
