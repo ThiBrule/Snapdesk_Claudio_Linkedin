@@ -1,54 +1,61 @@
 /* ===========================================================================
    Snapdesk LinkedIn — mini app. Feuille de style partagée.
-   Palette : papier chaud / encre / accent laiton, vert "dispo". Clair + sombre.
-   Typo : Josefin Sans (titres) + DM Sans (textes).
+   Palette Snapdesk : vert sauge (accent principal) + rose (accent secondaire),
+   encre quasi noire sur papier quasi blanc. Clair + sombre.
+   Typo : Comfortaa (titres, arrondi) + Nunito (textes).
    =========================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Josefin+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;500;600;700&family=Nunito:wght@400;500;600;700&display=swap');
 
 :root {
-  --paper: #F6F3EE;
-  --paper-2: #FBF9F5;
+  --paper: #F6F6F2;
+  --paper-2: #FCFCFA;
   --card: #FFFFFF;
-  --ink: #1B1E24;
-  --ink-soft: #3C4048;
-  --taupe: #8A8378;
-  --line: #E4DED4;
-  --brass: #B67A2E;
-  --brass-soft: #F0E4CF;
-  --green: #2E7D57;
-  --green-soft: #E1F0E7;
-  --amber: #B5820A;
+  --ink: #2B2E2B;
+  --ink-soft: #4C504B;
+  --taupe: #8A8E86;
+  --line: #E6E7E0;
+  --brass: #52735E;        /* accent principal : vert sauge Snapdesk */
+  --brass-soft: #E5ECE4;
+  --green: #3E8E60;        /* "disponible" / succès */
+  --green-soft: #E0F0E6;
+  --rose: #CE7B95;         /* accent secondaire : rose Snapdesk */
+  --rose-soft: #F7E7EC;
+  --amber: #9A6B1F;        /* "à venir" / avertissement */
+  --amber-soft: #F2E7CF;
   --red: #B4462F;
   --red-soft: #F3E0DA;
   --shadow: 0 1px 2px rgba(27, 30, 36, .06), 0 8px 24px rgba(27, 30, 36, .07);
   --radius: 14px;
-  /* Titres : Josefin Sans (nom de variable historique conservé). */
-  --serif: "Josefin Sans", Georgia, "Times New Roman", serif;
-  /* Textes : DM Sans. */
-  --sans: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  /* Titres : Comfortaa (arrondi, façon logo/marque Snapdesk). */
+  --serif: "Comfortaa", "Segoe UI", Verdana, sans-serif;
+  /* Textes : Nunito (arrondi, lisible). */
+  --sans: "Nunito", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --mono: "SF Mono", "JetBrains Mono", "Cascadia Code", Menlo, Consolas, monospace;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --paper: #16181C; --paper-2: #1B1E24; --card: #20242B; --ink: #ECE7DE;
-    --ink-soft: #B9B4AA; --taupe: #8C867B; --line: #2E333B; --brass: #D89E4E;
-    --brass-soft: #34291A; --green: #5CBE8C; --green-soft: #16281F; --amber: #D89E4E;
+    --paper: #171918; --paper-2: #1D201E; --card: #232725; --ink: #ECEEE8;
+    --ink-soft: #BBC0B8; --taupe: #8C908A; --line: #2F3431; --brass: #8CB29B;
+    --brass-soft: #28332C; --green: #67C08C; --green-soft: #182A20;
+    --rose: #E3A6B8; --rose-soft: #372630; --amber: #D3A458; --amber-soft: #322818;
     --red: #E08a72; --red-soft: #2E1C17;
     --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 10px 30px rgba(0, 0, 0, .35);
   }
 }
 :root[data-theme="light"] {
-  --paper: #F6F3EE; --paper-2: #FBF9F5; --card: #FFFFFF; --ink: #1B1E24;
-  --ink-soft: #3C4048; --taupe: #8A8378; --line: #E4DED4; --brass: #B67A2E;
-  --brass-soft: #F0E4CF; --green: #2E7D57; --green-soft: #E1F0E7; --amber: #B5820A;
+  --paper: #F6F6F2; --paper-2: #FCFCFA; --card: #FFFFFF; --ink: #2B2E2B;
+  --ink-soft: #4C504B; --taupe: #8A8E86; --line: #E6E7E0; --brass: #52735E;
+  --brass-soft: #E5ECE4; --green: #3E8E60; --green-soft: #E0F0E6;
+  --rose: #CE7B95; --rose-soft: #F7E7EC; --amber: #9A6B1F; --amber-soft: #F2E7CF;
   --red: #B4462F; --red-soft: #F3E0DA;
   --shadow: 0 1px 2px rgba(27, 30, 36, .06), 0 8px 24px rgba(27, 30, 36, .07);
 }
 :root[data-theme="dark"] {
-  --paper: #16181C; --paper-2: #1B1E24; --card: #20242B; --ink: #ECE7DE;
-  --ink-soft: #B9B4AA; --taupe: #8C867B; --line: #2E333B; --brass: #D89E4E;
-  --brass-soft: #34291A; --green: #5CBE8C; --green-soft: #16281F; --amber: #D89E4E;
+  --paper: #171918; --paper-2: #1D201E; --card: #232725; --ink: #ECEEE8;
+  --ink-soft: #BBC0B8; --taupe: #8C908A; --line: #2F3431; --brass: #8CB29B;
+  --brass-soft: #28332C; --green: #67C08C; --green-soft: #182A20;
+  --rose: #E3A6B8; --rose-soft: #372630; --amber: #D3A458; --amber-soft: #322818;
   --red: #E08a72; --red-soft: #2E1C17;
   --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 10px 30px rgba(0, 0, 0, .35);
 }
@@ -70,7 +77,7 @@ h1 { font-family: var(--serif); font-weight: 600; letter-spacing: -.01em; font-s
 .lede { color: var(--ink-soft); font-size: 16px; max-width: 56ch; margin: 0; }
 
 .badge { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; letter-spacing: .03em; padding: 4px 10px; border-radius: 999px; }
-.badge.sample { background: var(--brass-soft); color: var(--amber); }
+.badge.sample { background: var(--amber-soft); color: var(--amber); }
 .badge.sheet { background: var(--green-soft); color: var(--green); }
 
 /* --- Boutons --- */
@@ -94,13 +101,13 @@ h1 { font-family: var(--serif); font-weight: 600; letter-spacing: -.01em; font-s
 .search input:focus { outline: 2px solid var(--brass); outline-offset: 1px; border-color: transparent; }
 
 /* --- Bouton pleine largeur : post général (hors espace) --- */
-.general-cta { display: flex; align-items: center; gap: 16px; width: 100%; margin-bottom: 20px; padding: 18px 22px; border-radius: var(--radius); background: var(--card); border: 1px solid var(--line); border-left: 4px solid var(--brass); box-shadow: var(--shadow); color: inherit; text-decoration: none; transition: transform .1s, box-shadow .15s; }
+.general-cta { display: flex; align-items: center; gap: 16px; width: 100%; margin-bottom: 20px; padding: 18px 22px; border-radius: var(--radius); background: var(--card); border: 1px solid var(--line); border-left: 4px solid var(--rose); box-shadow: var(--shadow); color: inherit; text-decoration: none; transition: transform .1s, box-shadow .15s; }
 .general-cta:hover { text-decoration: none; transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,.08), 0 14px 34px rgba(27,30,36,.1); }
 .general-cta .ic { font-size: 24px; flex: none; }
 .general-cta .txt { display: flex; flex-direction: column; gap: 2px; }
 .general-cta .t { font-family: var(--serif); font-size: 18px; font-weight: 600; }
 .general-cta .s { font-size: 13px; color: var(--taupe); }
-.general-cta .go { margin-left: auto; font-weight: 600; color: var(--brass); white-space: nowrap; }
+.general-cta .go { margin-left: auto; font-weight: 700; color: var(--rose); white-space: nowrap; }
 
 /* --- Grille d'espaces --- */
 .spaces { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
@@ -112,7 +119,7 @@ h1 { font-family: var(--serif); font-weight: 600; letter-spacing: -.01em; font-s
 .pill { font-size: 12px; padding: 3px 9px; border-radius: 999px; background: var(--paper-2); border: 1px solid var(--line); color: var(--ink-soft); font-variant-numeric: tabular-nums; }
 .dispo { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; }
 .dispo.ok { background: var(--green-soft); color: var(--green); }
-.dispo.soon { background: var(--brass-soft); color: var(--amber); }
+.dispo.soon { background: var(--amber-soft); color: var(--amber); }
 .space-card .go { margin-top: auto; font-size: 13px; font-weight: 600; color: var(--brass); }
 
 /* --- Page espace : entête --- */
@@ -148,7 +155,7 @@ h1 { font-family: var(--serif); font-weight: 600; letter-spacing: -.01em; font-s
 .post-body { padding: 6px 16px 12px; font-size: 13.5px; color: var(--ink); white-space: pre-wrap; word-break: break-word; flex: 1; min-height: 90px; }
 .post-body.muted { color: var(--ink-soft); font-style: italic; }
 .post-status { font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; margin: 0 16px 12px; align-self: flex-start; }
-.post-status.skip { background: var(--brass-soft); color: var(--amber); }
+.post-status.skip { background: var(--amber-soft); color: var(--amber); }
 .post-status.err { background: var(--red-soft); color: var(--red); }
 .post-status.ok { background: var(--green-soft); color: var(--green); }
 .post-actions { display: flex; flex-wrap: wrap; gap: 6px; border-top: 1px solid var(--line); padding: 10px 12px; }
@@ -180,9 +187,9 @@ h1 { font-family: var(--serif); font-weight: 600; letter-spacing: -.01em; font-s
 @media (prefers-reduced-motion: reduce) { .skeleton::after { animation: none; } }
 
 .notice { background: var(--paper-2); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; font-size: 13.5px; color: var(--ink-soft); margin-bottom: 18px; }
-.notice code { font-family: var(--mono); font-size: 12px; background: var(--brass-soft); color: var(--amber); padding: 1px 6px; border-radius: 5px; }
+.notice code { font-family: var(--mono); font-size: 12px; background: var(--brass-soft); color: var(--brass); padding: 1px 6px; border-radius: 5px; }
 .error-box { background: var(--red-soft); border: 1px solid var(--red); color: var(--red); border-radius: var(--radius); padding: 14px 16px; font-size: 14px; margin-bottom: 18px; }
-.store-warn { background: var(--brass-soft); border: 1px solid var(--brass); color: var(--amber); border-radius: var(--radius); padding: 12px 16px; font-size: 13.5px; line-height: 1.5; margin-bottom: 16px; }
+.store-warn { background: var(--amber-soft); border: 1px solid var(--amber); color: var(--amber); border-radius: var(--radius); padding: 12px 16px; font-size: 13.5px; line-height: 1.5; margin-bottom: 16px; }
 .store-warn b { color: var(--amber); }
 
 /* --- Toast copie --- */
