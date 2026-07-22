@@ -28,17 +28,19 @@ import { fetchHubspotContext } from '../lib/hubspot.js';
 // (persona:<key>). Repli : construit depuis la fiche user et le matérialise.
 async function resolveCommercial(key) {
   const c = getCommercial(key);
-  if (c) return c;
   try {
     const stored = await kvGet(`persona:${key}`);
-    if (stored && stored.toneOfVoice) return stored;
+    if (c) return stored ? { ...c, ...stored, key: c.key } : c; // persona statique + override éventuel
+    if (stored && stored.toneOfVoice) return stored;             // persona perso enregistré
     const rec = await kvGet(`user:${key}`);
     if (rec) {
       const built = buildUserPersona({ key, name: rec.name, role: rec.role, bio: rec.bio });
       try { await kvSet(`persona:${key}`, built); } catch { /* best effort */ }
       return built;
     }
-  } catch { /* store injoignable */ }
+  } catch {
+    if (c) return c; // store injoignable → au moins le persona statique
+  }
   return null;
 }
 
