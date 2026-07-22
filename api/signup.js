@@ -17,7 +17,7 @@
 // ---------------------------------------------------------------------------
 
 import { issueToken, hashPassword, issueEmailToken } from '../lib/auth.js';
-import { kvGet, kvSet, isConfigured } from '../lib/store.js';
+import { kvGet, kvSet, kvDel, isConfigured } from '../lib/store.js';
 import { emailConfigured, sendEmail, verificationEmailHtml } from '../lib/email.js';
 
 export const ROLES = ['Marketing', 'Sales', 'Product Manager', 'Facility Manager', 'Architecte', 'Sourcing'];
@@ -86,7 +86,8 @@ export default async function handler(req, res) {
       } catch (mailErr) {
         // L'e-mail n'est pas parti : on supprime le compte à moitié créé pour
         // permettre une nouvelle tentative, et on remonte une erreur claire.
-        return res.status(502).json({ ok: false, error: "Compte créé mais l'e-mail de vérification n'a pas pu être envoyé. Réessaie ou contacte un admin. (" + mailErr.message + ')' });
+        try { await kvDel(`user:${email}`); } catch { /* best effort */ }
+        return res.status(502).json({ ok: false, error: "L'e-mail de vérification n'a pas pu être envoyé. Réessaie, ou préviens un admin (l'expéditeur/domaine Resend n'est peut-être pas encore configuré)." });
       }
       return res.status(200).json({ ok: true, pending: true, email });
     }
