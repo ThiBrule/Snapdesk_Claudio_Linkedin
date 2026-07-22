@@ -1,24 +1,18 @@
 // ---------------------------------------------------------------------------
-// POST /api/signup   (inscription en self-service)
+// POST /api/signup   (inscription en self-service, avec validation par un admin)
 //
-// N'IMPORTE QUI avec une adresse e-mail @snapdesk.co peut créer un compte.
+// N'IMPORTE QUI avec une adresse e-mail @snapdesk.co peut demander un compte.
 //   body { firstName, lastName, email, password, role, bio? }
 //   → crée user:<email> dans Supabase (mot de passe HACHÉ), NON admin,
-//     sans bloc attribué (un admin lui associera son persona ensuite).
-//
-// Vérification e-mail (Resend) :
-//   - si RESEND_API_KEY est configuré : le compte est créé "non vérifié",
-//     un e-mail de validation est envoyé, et la connexion est bloquée tant
-//     que l'adresse n'est pas confirmée (→ réponse { ok, pending:true }).
-//   - sinon : le compte est actif immédiatement (auto-connexion, jeton renvoyé).
+//     EN ATTENTE (verified:false) : la connexion est bloquée tant qu'un admin
+//     n'a pas approuvé la demande depuis la page Utilisateurs.
 //
 // Garde-fous : e-mail obligatoirement @snapdesk.co ; jamais admin ; refuse si
 // le compte existe déjà (ou s'il s'agit du compte maître).
 // ---------------------------------------------------------------------------
 
-import { issueToken, hashPassword, issueEmailToken } from '../lib/auth.js';
-import { kvGet, kvSet, kvDel, isConfigured } from '../lib/store.js';
-import { emailConfigured, sendEmail, verificationEmailHtml } from '../lib/email.js';
+import { hashPassword } from '../lib/auth.js';
+import { kvGet, kvSet, isConfigured } from '../lib/store.js';
 
 export const ROLES = ['Marketing', 'Sales', 'Product Manager', 'Facility Manager', 'Architecte', 'Sourcing'];
 const EMAIL_RE = /^[a-z0-9][a-z0-9._+-]*@snapdesk\.co$/;
@@ -62,38 +56,17 @@ export default async function handler(req, res) {
   try {
     const existing = await kvGet(`user:${email}`);
     if (existing) {
-      return res.status(409).json({ ok: false, error: 'Un compte existe déjà avec cet e-mail. Connecte-toi.' });
+      const pendingMsg = existing.verified === false
+        ? 'Une demande est déjà en attente pour cet e-mail. Un admin doit la valider.'
+        : 'Un compte existe déjà avec cet e-mail. Connecte-toi.';
+      return res.status(409).json({ ok: false, error: pendingMsg });
     }
 
     const name = `${firstName} ${lastName}`.trim();
-    const mustVerify = emailConfigured();
-    const record = { hash: hashPassword(password), name, admin: false, commercial: '', role, bio, verified: !mustVerify };
-    await kvSet(`user:${email}`, record);
+    // Compte EN ATTENTE : un admin doit l'approuver (verified:true) pour l'activer.
+    await kvSet(`user:${email}`, { hash: hashPassword(password), name, admin: false, commercial: '', role, bio, verified: false });
 
-    // Vérification par e-mail (Resend) si configuré.
-    if (mustVerify) {
-      const token = issueEmailToken(email);
-      const proto = (req.headers['x-forwarded-proto'] || 'https').toString().split(',')[0];
-      const host = (req.headers['x-forwarded-host'] || req.headers.host || '').toString();
-      const origin = process.env.SITE_URL || (host ? `${proto}://${host}` : '');
-      const link = `${origin}/verify.html?token=${encodeURIComponent(token)}`;
-      try {
-        await sendEmail({
-          to: email,
-          subject: 'Active ton compte Snapdesk',
-          html: verificationEmailHtml({ name, link }),
-        });
-      } catch (mailErr) {
-        // L'e-mail n'est pas parti : on supprime le compte à moitié créé pour
-        // permettre une nouvelle tentative, et on remonte une erreur claire.
-        try { await kvDel(`user:${email}`); } catch { /* best effort */ }
-        return res.status(502).json({ ok: false, error: "L'e-mail de vérification n'a pas pu être envoyé. Réessaie, ou préviens un admin (l'expéditeur/domaine Resend n'est peut-être pas encore configuré)." });
-      }
-      return res.status(200).json({ ok: true, pending: true, email });
-    }
-
-    // Pas de vérification e-mail configurée → compte actif, auto-connexion.
-    return res.status(200).json({ ok: true, token: issueToken(email, false, ''), user: email, admin: false, name, role });
+    return res.status(200).json({ ok: true, pending: true, email });
   } catch (err) {
     return res.status(500).json({ ok: false, error: err.message || String(err) });
   }

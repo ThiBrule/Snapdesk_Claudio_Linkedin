@@ -47,6 +47,15 @@ export default async function handler(req, res) {
       if (typeof body === 'string') { try { body = JSON.parse(body); } catch { body = {}; } }
       const username = String((body && body.username) || '').trim().toLowerCase();
       const password = String((body && body.password) || '');
+
+      // Approuver une demande d'inscription en attente (préserve tous les champs).
+      if (body && body.action === 'approve') {
+        if (!username) return res.status(400).json({ ok: false, error: 'Pseudo requis' });
+        const rec = await kvGet(`user:${username}`);
+        if (!rec) return res.status(404).json({ ok: false, error: 'Compte introuvable' });
+        await kvSet(`user:${username}`, { ...rec, verified: true });
+        return res.status(200).json({ ok: true, user: { username, verified: true } });
+      }
       const name = String((body && body.name) || '').trim();
       const admin = !!(body && body.admin);
       if (!username) return res.status(400).json({ ok: false, error: 'Pseudo requis' });

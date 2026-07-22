@@ -101,16 +101,34 @@
         if (!data.ok) throw new Error(data.error || 'Erreur');
         if (!data.users.length) { list.className=''; list.innerHTML = '<p style="color:var(--taupe); font-size:14px;">Aucun compte pour l\'instant. Ajoute le premier ci-contre.</p>'; return; }
         list.className = '';
-        list.innerHTML = data.users.map(u => `
+        const pending = data.users.filter(u => u.verified === false);
+        const active = data.users.filter(u => u.verified !== false);
+        const meta = (u) => `
+          <div style="font-weight:600; font-size:14.5px;">${esc(u.username)} ${u.admin ? '<span class="badge sheet" style="margin-left:6px;">admin</span>' : (u.commercial ? `<span class="badge" style="margin-left:6px;">${esc(personaName(u.commercial))}</span>` : '<span class="badge" style="margin-left:6px; opacity:.7;">aucun bloc</span>')}</div>
+          ${(u.name || u.role) ? `<div style="font-size:12.5px; color:var(--taupe);">${esc(u.name)}${(u.name && u.role) ? ' · ' : ''}${u.role ? esc(u.role) : ''}</div>` : ''}
+          ${u.bio ? `<div style="font-size:12px; color:var(--taupe); margin-top:3px; max-width:52ch; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${esc(u.bio)}">📝 ${esc(u.bio)}</div>` : ''}`;
+
+        const pendingHtml = pending.length ? `
+          <div style="background:var(--amber-soft); border:1px solid var(--amber); border-radius:12px; padding:12px 14px; margin-bottom:18px;">
+            <div style="font-weight:700; font-size:13px; color:var(--amber); margin-bottom:6px;">⏳ Demandes en attente · ${pending.length}</div>
+            ${pending.map(u => `
+              <div style="display:flex; align-items:center; gap:10px; padding:9px 0; border-top:1px solid rgba(0,0,0,.06);">
+                <div style="flex:1;">${meta(u)}</div>
+                <button class="btn small validate" data-approve="${esc(u.username)}">✅ Approuver</button>
+                <button class="btn small danger" data-refuse="${esc(u.username)}">Refuser</button>
+              </div>`).join('')}
+          </div>` : '';
+
+        const activeHtml = active.length ? active.map(u => `
           <div style="display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--line);">
-            <div style="flex:1;">
-              <div style="font-weight:600; font-size:14.5px;">${esc(u.username)} ${u.admin ? '<span class="badge sheet" style="margin-left:6px;">admin</span>' : (u.commercial ? `<span class="badge" style="margin-left:6px;">${esc(personaName(u.commercial))}</span>` : '<span class="badge" style="margin-left:6px; opacity:.7;">aucun bloc</span>')}${u.verified === false ? '<span class="badge" style="margin-left:6px; background:var(--amber-soft); color:var(--amber);">non vérifié</span>' : ''}</div>
-              ${(u.name || u.role) ? `<div style="font-size:12.5px; color:var(--taupe);">${esc(u.name)}${(u.name && u.role) ? ' · ' : ''}${u.role ? esc(u.role) : ''}</div>` : ''}
-              ${u.bio ? `<div style="font-size:12px; color:var(--taupe); margin-top:3px; max-width:52ch; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${esc(u.bio)}">📝 ${esc(u.bio)}</div>` : ''}
-            </div>
+            <div style="flex:1;">${meta(u)}</div>
             <button class="btn small" data-edit="${esc(u.username)}" data-name="${esc(u.name)}" data-admin="${u.admin?1:0}" data-commercial="${esc(u.commercial||'')}">Modifier</button>
             <button class="btn small danger" data-del="${esc(u.username)}">Supprimer</button>
-          </div>`).join('');
+          </div>`).join('') : '<p style="color:var(--taupe); font-size:14px;">Aucun compte actif pour l\'instant.</p>';
+
+        list.innerHTML = pendingHtml + activeHtml;
+        list.querySelectorAll('[data-approve]').forEach(b => b.addEventListener('click', () => approveUser(b.getAttribute('data-approve'))));
+        list.querySelectorAll('[data-refuse]').forEach(b => b.addEventListener('click', () => refuseUser(b.getAttribute('data-refuse'))));
         list.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => delUser(b.getAttribute('data-del'))));
         list.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => {
           document.getElementById('f-username').value = b.getAttribute('data-edit');
@@ -125,6 +143,19 @@
         list.className = '';
         list.innerHTML = `<div class="error-box">${esc(err.message)}</div>`;
       }
+    }
+
+    async function approveUser(username) {
+      const res = await Auth.fetch('/api/users', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ username, action:'approve' }) });
+      const data = await res.json().catch(()=>({}));
+      if (data.ok) { toast('Compte approuvé ✅'); loadUsers(); } else { toast(data.error || 'Erreur'); }
+    }
+
+    async function refuseUser(username) {
+      if (!confirm(`Refuser et supprimer la demande de « ${username} » ?`)) return;
+      const res = await Auth.fetch('/api/users?username=' + encodeURIComponent(username), { method:'DELETE' });
+      const data = await res.json().catch(()=>({}));
+      if (data.ok) { toast('Demande refusée'); loadUsers(); } else { toast(data.error || 'Erreur'); }
     }
 
     async function delUser(username) {

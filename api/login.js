@@ -32,9 +32,9 @@ export default async function handler(req, res) {
     try {
       const rec = await kvGet(`user:${username}`);
       if (rec && rec.hash && verifyPassword(password, rec.hash)) {
-        // Compte non vérifié (inscription self-service en attente de validation e-mail).
+        // Compte en attente de validation par un administrateur (inscription self-service).
         if (rec.verified === false) {
-          return res.status(403).json({ ok: false, code: 'UNVERIFIED', error: "Ton compte n'est pas encore vérifié. Ouvre l'e-mail d'activation qu'on t'a envoyé." });
+          return res.status(403).json({ ok: false, code: 'PENDING', error: "Ton compte est en attente de validation par un administrateur." });
         }
         const admin = !!rec.admin;
         const commercial = admin ? '' : (rec.commercial || '');
