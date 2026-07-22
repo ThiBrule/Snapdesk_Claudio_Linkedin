@@ -19,7 +19,7 @@
 
 import { COMMERCIALS, COMMERCIAL_KEYS, getCommercial } from '../lib/commercials/index.js';
 import { generatePost, MODEL } from '../lib/llm.js';
-import { requireAuth } from '../lib/auth.js';
+import { requireActiveUser } from '../lib/auth.js';
 import { fetchHubspotContext } from '../lib/hubspot.js';
 
 export default async function handler(req, res) {
@@ -28,8 +28,8 @@ export default async function handler(req, res) {
     return res.status(405).json({ ok: false, error: 'Méthode non autorisée' });
   }
 
-  // --- Authentification par session (login pseudo + mot de passe) ---
-  const session = requireAuth(req, res);
+  // --- Authentification + revérification du compte (révocation immédiate) ---
+  const session = await requireActiveUser(req, res);
   if (!session) return;
 
   // --- Parsing du corps (Vercel parse déjà le JSON, mais on gère la string au cas où) ---

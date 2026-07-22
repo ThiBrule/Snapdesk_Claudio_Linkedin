@@ -9,7 +9,7 @@
 // ---------------------------------------------------------------------------
 
 import { getSpaces } from '../lib/spaces.js';
-import { requireAuth } from '../lib/auth.js';
+import { requireActiveUser } from '../lib/auth.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -17,8 +17,8 @@ export default async function handler(req, res) {
     return res.status(405).json({ ok: false, error: 'Méthode non autorisée' });
   }
 
-  // --- Authentification par session ---
-  if (!requireAuth(req, res)) return;
+  // --- Authentification + revérification du compte (révocation immédiate) ---
+  if (!(await requireActiveUser(req, res))) return;
 
   try {
     const { source, spaces } = await getSpaces();

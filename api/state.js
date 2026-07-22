@@ -18,7 +18,7 @@
 //     restent visibles uniquement des admins.
 // ---------------------------------------------------------------------------
 
-import { requireAuth } from '../lib/auth.js';
+import { requireActiveUser } from '../lib/auth.js';
 import { kvGet, kvList, kvSet, kvDel, isConfigured } from '../lib/store.js';
 
 const HISTORY_MAX = 60;
@@ -28,7 +28,7 @@ const uid = (u) => String(u || '').toLowerCase().replace(/:/g, '_');
 const tsOf = (r) => (r && r.updated_at ? (Date.parse(r.updated_at) || 0) : 0);
 
 export default async function handler(req, res) {
-  const session = requireAuth(req, res);
+  const session = await requireActiveUser(req, res);
   if (!session) return;
   const me = uid(session.user);
 

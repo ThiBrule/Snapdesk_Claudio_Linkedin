@@ -9,12 +9,12 @@
 // qu'il voit et peut générer dans les espaces. Ignoré pour les admins (voient tout).
 // ---------------------------------------------------------------------------
 
-import { requireAdmin, hashPassword } from '../lib/auth.js';
+import { requireActiveAdmin, hashPassword } from '../lib/auth.js';
 import { kvGet, kvList, kvSet, kvDel, isConfigured } from '../lib/store.js';
 import { COMMERCIAL_KEYS } from '../lib/commercials/index.js';
 
 export default async function handler(req, res) {
-  const session = requireAdmin(req, res);
+  const session = await requireActiveAdmin(req, res);
   if (!session) return;
 
   if (!isConfigured()) {
